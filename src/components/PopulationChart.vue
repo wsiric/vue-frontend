@@ -1,10 +1,13 @@
 <template>
-  <v-container class="mt-16">
-    <v-row>
+  <v-container class="mt-16" style="position: relative;">
+    <div class="chart-container">
       <canvas id="myChart"></canvas>
-    </v-row>
-    <v-row>
-      <v-col>
+      <div class="relative-year">{{ currentYearDisplay }}</div>
+      <div class="relative-world-pop">Total: {{ currentWorldPopulationDisplay }}</div>
+    </div>
+
+    <v-row class="pl-16">
+      <v-col cols="1">
         <v-btn @click="togglePlay" :icon="isPlaying ? 'mdi-pause' : 'mdi-play'" size="large"></v-btn>
       </v-col>
       <v-col>
@@ -30,6 +33,15 @@ const chartData = {
     label: "Population growth per country, 1950 to 2021",
     borderColor: 'rgb(255,0 ,0)',
     data: [],
+    backgroundColor: [
+      'rgba(255, 99, 132, 0.8)',
+      'rgba(255, 159, 64, 0.8)',
+      'rgba(255, 205, 86, 0.8)',
+      'rgba(75, 192, 192, 0.8)',
+      'rgba(54, 162, 235, 0.8)',
+      'rgba(153, 102, 255, 0.8)',
+      'rgba(201, 203, 207, 0.8)'
+    ],
   }]
 }
 
@@ -38,10 +50,32 @@ const config = {
   data: chartData,
   options: {
     indexAxis: 'y',
+    plugins: {
+      legend: {
+        labels: {
+          // This more specific font property overrides the global property
+          font: {
+            size: 32
+          }
+        }
+      }
+    },
     scales: {
       y: {
+        ticks: {
+          font: {
+            size: 18
+          }
+        },
         grid: {
           display: false
+        }
+      },
+      x: {
+        ticks: {
+          font: {
+            size: 18
+          }
         }
       }
     }
@@ -49,6 +83,8 @@ const config = {
 }
 
 const nTop = 10
+const currentYearDisplay = ref("")
+const currentWorldPopulationDisplay = ref("")
 const population = ref("")
 const years = ref("")
 const chartState = ref("")
@@ -78,6 +114,8 @@ const togglePlay = async () => {
 
 const initializeDisplayPopulation = async () => {
   const firstYear = years.value.data[0]
+  currentYearDisplay.value = firstYear
+  currentWorldPopulationDisplay.value = formatNumber(population.value.data[firstYear][0][1])
   chartState.value = { [firstYear]: population.value.data[firstYear] }
   computeNewChart(chartState, firstYear)
 }
@@ -99,6 +137,8 @@ async function displayPopulation(startIndex) {
       break;
     }
     const year = years.value.data[i];
+    currentYearDisplay.value = year
+    currentWorldPopulationDisplay.value = formatNumber(population.value.data[year][0][1])
     chartState.value = { [year]: population.value.data[year] };
     computeNewChart(chartState, year)
     await delay(250);
@@ -131,4 +171,32 @@ function removeChartData() {
 async function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+function formatNumber(number) {
+  return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
 </script>
+
+<style>
+.chart-container {
+  position: relative;
+}
+
+.relative-year {
+  position: absolute;
+  color: #87857e;
+  top: 66%;
+  left: 81%;
+  font-size: 64px;
+  font-weight: bold;
+}
+
+.relative-world-pop {
+  position: absolute;
+  color: #87857e;
+  top: 80%;
+  left: 65%;
+  font-size: 38px;
+}
+</style>
