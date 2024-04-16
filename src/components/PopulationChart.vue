@@ -1,5 +1,6 @@
 <template>
-  <v-container class="mt-16" style="position: relative;">
+  <h1 class="title" >Population growth per country, 1950 to 2021</h1>
+  <v-container style="position: relative;">
     <div class="chart-container">
       <canvas id="myChart"></canvas>
       <div class="relative-year">{{ currentYearDisplay }}</div>
@@ -12,6 +13,7 @@
       </v-col>
       <v-col>
         <v-btn @click="resetButton" icon='mdi-cancel' size="large"></v-btn>
+        <v-btn @click="test" icon='mdi-cancel' size="large"></v-btn>
       </v-col>
     </v-row>
   </v-container>
@@ -27,6 +29,7 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { shallowRef } from 'vue';
 
 const labels = ref([])
+
 
 const chartData = {
   labels: labels.value,
@@ -51,10 +54,6 @@ const config = {
   data: chartData,
   options: {
     indexAxis: 'y',
-    animation: {
-      duration: 1000, // Set the duration of animation in milliseconds
-      easing: 'linear', // Set the easing function for the animation
-    },
     plugins: {
       datalabels: {
         align: 'end', 
@@ -68,12 +67,7 @@ const config = {
         }
       },
       legend: {
-        labels: {
-          // This more specific font property overrides the global property
-          font: {
-            size: 32
-          }
-        }
+        display: false,
       }
     },
     scales: {
@@ -129,6 +123,22 @@ const togglePlay = async () => {
   }
 }
 
+const test = () => {
+  const newBackgroundColors = myChart.value.value.data.labels.map(label => getRandomColor(label));
+  console.log(newBackgroundColors)
+  myChart.value.value.data.datasets[0].backgroundColor = newBackgroundColors;
+  myChart.value.value.update();
+}
+
+function getRandomColor(text) {
+  let seed = 0;
+  for (let i = 0; i < text.length; i++) {
+    seed += text.charCodeAt(i);
+  }
+  const randomColor = '#' + Math.floor(Math.abs(Math.sin(seed) * 14777215) % 16777215).toString(16);
+  return randomColor;
+}
+
 const initializeDisplayPopulation = async () => {
   const firstYear = years.value.data[0]
   currentYearDisplay.value = firstYear
@@ -176,12 +186,8 @@ function computeNewChart(chartState, year) {
 function changeChartData(label, newData) {
   myChart.value.value.data.labels = label
   myChart.value.value.data.datasets[0].data = newData
-  myChart.value.value.update();
-}
-
-function removeChartData() {
-  myChart.value.value.data.labels = []
-  myChart.value.value.data.datasets[0].data = []
+  const newBackgroundColors = myChart.value.value.data.labels.map(label => getRandomColor(label));
+  myChart.value.value.data.datasets[0].backgroundColor = newBackgroundColors;
   myChart.value.value.update();
 }
 
@@ -215,5 +221,11 @@ function formatNumber(number) {
   top: 80%;
   left: 65%;
   font-size: 38px;
+}
+
+.title {
+  color: #87857e;
+  text-align: center;
+  margin-top: 40px;
 }
 </style>
