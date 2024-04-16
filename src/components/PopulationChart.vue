@@ -23,6 +23,7 @@ import axios from 'axios';
 import { onBeforeMount, onMounted } from 'vue'
 import { ref } from '@vue/reactivity';
 import Chart from 'chart.js/auto';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { shallowRef } from 'vue';
 
 const labels = ref([])
@@ -50,7 +51,22 @@ const config = {
   data: chartData,
   options: {
     indexAxis: 'y',
+    animation: {
+      duration: 1000, // Set the duration of animation in milliseconds
+      easing: 'linear', // Set the easing function for the animation
+    },
     plugins: {
+      datalabels: {
+        align: 'end', 
+        anchor: 'end',
+        color: 'black',
+        font: {
+          size: 12
+        },
+        formatter: (value) => {
+          return formatNumber(value);
+        }
+      },
       legend: {
         labels: {
           // This more specific font property overrides the global property
@@ -74,12 +90,13 @@ const config = {
       x: {
         ticks: {
           font: {
-            size: 18
+            size: 12
           }
         }
       }
     }
-  }
+  },
+  plugins: [ChartDataLabels]
 }
 
 const nTop = 10
