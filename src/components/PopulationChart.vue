@@ -1,18 +1,16 @@
 <template>
-  <v-btn @click="togglePlay" :icon="isPlaying ? 'mdi-pause' : 'mdi-play'" size="large"></v-btn>
-  <v-btn @click="resetButton" icon='mdi-cancel' size="large"></v-btn>
-  <v-btn @click="test" icon='mdi-cancel' size="large"></v-btn>
-  <div>
-    <ul>
-      <li v-for="(value, key) in chartState" :key="key">
-        Key: {{ key }} - Value: <div>{{ value.slice(0, 10) }}</div>
-      </li>
-    </ul>
-  </div>
-  <v-container>
-    <div>
+  <v-container class="mt-16">
+    <v-row>
       <canvas id="myChart"></canvas>
-    </div>
+    </v-row>
+    <v-row>
+      <v-col>
+        <v-btn @click="togglePlay" :icon="isPlaying ? 'mdi-pause' : 'mdi-play'" size="large"></v-btn>
+      </v-col>
+      <v-col>
+        <v-btn @click="resetButton" icon='mdi-cancel' size="large"></v-btn>
+      </v-col>
+    </v-row>
   </v-container>
 
 </template>
@@ -40,6 +38,13 @@ const config = {
   data: chartData,
   options: {
     indexAxis: 'y',
+    scales: {
+      y: {
+        grid: {
+          display: false
+        }
+      }
+    }
   }
 }
 
@@ -64,10 +69,6 @@ onBeforeMount(async () => {
   await initializeDisplayPopulation()
 })
 
-const test = () => {
-  changeChartData(["h",'a'], [0,1])
-  // myChart.value.update();
-}
 const togglePlay = async () => {
   isPlaying.value = !isPlaying.value;
   if (isPlaying.value) {
@@ -78,10 +79,7 @@ const togglePlay = async () => {
 const initializeDisplayPopulation = async () => {
   const firstYear = years.value.data[0]
   chartState.value = { [firstYear]: population.value.data[firstYear] }
-  const nTopCountryList = chartState.value[firstYear].slice(0, nTop);
-  const countryNames = nTopCountryList.map(item => item[0]);
-  const countryPopulation = nTopCountryList.map(item => item[1]);
-  changeChartData(countryNames, countryPopulation)
+  computeNewChart(chartState, firstYear)
 }
 
 // bug that when user click reset button, its currentIndex get rewrite just after set to 0
@@ -102,12 +100,20 @@ async function displayPopulation(startIndex) {
     }
     const year = years.value.data[i];
     chartState.value = { [year]: population.value.data[year] };
+    computeNewChart(chartState, year)
     await delay(250);
   }
   if (currentIndex.value === years.value.data.length - 1) {
     isPlaying.value = false;
     currentIndex.value = 0;
   }
+}
+
+function computeNewChart(chartState, year) {
+  const nTopCountryList = chartState.value[year].slice(1, nTop);
+  const countryNames = nTopCountryList.map(item => item[0]);
+  const countryPopulation = nTopCountryList.map(item => item[1]);
+  changeChartData(countryNames, countryPopulation)
 }
 
 function changeChartData(label, newData) {
