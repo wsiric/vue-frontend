@@ -13,7 +13,7 @@
       </v-col>
       <v-col>
         <v-btn @click="resetButton" icon='mdi-cancel' size="large"></v-btn>
-        <v-btn @click="nTopCountry" icon='mdi-cancel' size="large"></v-btn>
+        <v-btn @click="computeNTopPopCountry" icon='mdi-cancel' size="large"></v-btn>
       </v-col>
     </v-row>
   </v-container>
@@ -124,6 +124,7 @@ onBeforeMount(async () => {
 
   const cachedData = await sessionStorage.getItem('cachedData');
   if (cachedData) {
+    console.log("Cache found, loading cached data")
     const cachedJSONObject = JSON.parse(cachedData);
     population.value = cachedJSONObject.population
     asiaPop.value = cachedJSONObject.asiaPop;
@@ -134,7 +135,7 @@ onBeforeMount(async () => {
     saPop.value = cachedJSONObject.saPop;
     years.value = cachedJSONObject.years;
   } else {
-    console.log("dsa")
+    console.log("Cache doesn't exist, initialize cache data")
     const populationData = await axios.get('http://localhost:5000/population/asia');
     const asiaData = await axios.get('http://localhost:5000/population/asia');
     const euData = await axios.get('http://localhost:5000/population/europe');
@@ -153,7 +154,7 @@ onBeforeMount(async () => {
     saPop.value = saData.data;
     years.value = yearsData.data;
 
-    const cachingData = {
+    sessionStorage.setItem('cachedData', JSON.stringify({
       population: populationData.data,
       asiaPop: asiaData.data,
       euPop: euData.data,
@@ -162,12 +163,9 @@ onBeforeMount(async () => {
       naPop: naData.data,
       saPop: saData.data,
       years: yearsData.data
-    };
-
-    sessionStorage.setItem('cachedData', JSON.stringify(cachingData));
+    }));
   }
-
-  await initializeDisplayPopulation()
+  await initializeData()
 })
 
 const togglePlay = async () => {
@@ -186,12 +184,12 @@ function getRandomColor(text) {
   return randomColor;
 }
 
-const initializeDisplayPopulation = async () => {
+const initializeData = async () => {
   const firstYear = years.value[0]
   currentYear.value = firstYear
-  totalPop.value = formatNumber(population.value[firstYear][0][1])
-  chartState.value = { [firstYear]: population.value[firstYear] }
-  computeNewChart(chartState, firstYear)
+  totalPop.value = computeTotalPop(firstYear)
+  chartState.value = computeNTopPopCountry(firstYear, nTop).value
+  computeNewChart(chartState)
 }
 
 // bug that when user click reset button, its currentIndex get rewrite just after set to 0
@@ -199,7 +197,7 @@ const resetButton = async () => {
   isPlaying.value = false;
   currentIndex.value = 0;
   console.log("resetButton : " + currentIndex.value)
-  initializeDisplayPopulation();
+  initializeData();
 }
 
 async function displayPopulation(startIndex) {
@@ -210,9 +208,9 @@ async function displayPopulation(startIndex) {
     }
     const year = years.value[i];
     currentYear.value = year
-    totalPop.value = formatNumber(population.value[year][0][1])
-    chartState.value = { [year]: population.value[year] };
-    computeNewChart(chartState, year)
+    totalPop.value = formatNumber(computeTotalPop(year))
+    chartState.value = computeNTopPopCountry(year, nTop).value
+    computeNewChart(chartState)
     await delay(200);
   }
   if (currentIndex.value === years.value.length - 1) {
@@ -221,10 +219,9 @@ async function displayPopulation(startIndex) {
   }
 }
 
-function computeNewChart(chartState, year) {
-  const nTopCountryList = chartState.value[year].slice(1, nTop);
-  const countryNames = nTopCountryList.map(item => item[0]);
-  const countryPopulation = nTopCountryList.map(item => item[1]);
+function computeNewChart(chartState) {
+  const countryNames = chartState.value.map(item => item[0]);
+  const countryPopulation = chartState.value.map(item => item[1]);
   changeChartData(countryNames, countryPopulation)
 }
 
@@ -244,20 +241,30 @@ function formatNumber(number) {
   return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-function nTopCountry() {
-  currentYear.value = "2021"
-  const asiaList = toggleAsia.value ? asiaPop.value.data[parseInt(currentYear.value)].slice(1, 11) : [];
-  const euList = toggleEu.value ? euPop.value.data[parseInt(currentYear.value)].slice(1, 11) : [];
-  const africaList = toggleAfrica.value ? africaPop.value.data[parseInt(currentYear.value)].slice(1, 11) : [];
-  const ocList = toggleOc.value ? ocPop.value.data[parseInt(currentYear.value)].slice(1, 11) : [];
-  const naList = toggleNa.value ? naPop.value.data[parseInt(currentYear.value)].slice(1, 11) : [];
-  const saList = toggleSa.value ? saPop.value.data[parseInt(currentYear.value)].slice(1, 11) : [];
+function computeTotalPop(year) {
+  const asiaTotalPop = toggleAsia.value ? asiaPop.value[year][0][1] : 0
+  const euTotalPop = toggleEu.value ? euPop.value[year][0][1] : 0
+  const africaTotalPop = toggleAfrica.value ? africaPop.value[year][0][1] : 0
+  const ocTotalPop = toggleOc.value ? ocPop.value[year][0][1] : 0
+  const naTotalPop = toggleNa.value ? naPop.value[year][0][1] : 0
+  const saTotalPop = toggleSa.value ? saPop.value[year][0][1] : 0
+
+  return asiaTotalPop + euTotalPop + africaTotalPop + ocTotalPop + naTotalPop + saTotalPop
+}
+
+
+function computeNTopPopCountry(year, n) {
+  const asiaList = toggleAsia.value ? asiaPop.value[year].slice(1, 11) : [];
+  const euList = toggleEu.value ? euPop.value[year].slice(1, 11) : [];
+  const africaList = toggleAfrica.value ? africaPop.value[year].slice(1, 11) : [];
+  const ocList = toggleOc.value ? ocPop.value[year].slice(1, 11) : [];
+  const naList = toggleNa.value ? naPop.value[year].slice(1, 11) : [];
+  const saList = toggleSa.value ? saPop.value[year].slice(1, 11) : [];
 
   const topNCountry = ref([]);
 
   const lists = [asiaList, euList, africaList, ocList, naList, saList];
 
-  const n = 10;
   for (let i = 0; i < n; i++) {
     let maxPopulation = -Infinity;
     let maxIndex = -1;
