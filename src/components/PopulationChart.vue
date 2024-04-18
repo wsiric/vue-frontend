@@ -13,7 +13,6 @@
       </v-col>
       <v-col>
         <v-btn @click="resetButton" icon='mdi-cancel' size="large"></v-btn>
-        <v-btn @click="computeNTopPopCountry" icon='mdi-cancel' size="large"></v-btn>
       </v-col>
     </v-row>
   </v-container>
@@ -29,19 +28,13 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 const labels = ref([])
 const chartData = {
   labels: labels.value,
-  datasets: [{
-    label: "Population growth per country, 1950 to 2021",
-    borderColor: 'rgb(255,0 ,0)',
-    data: [],
-  },
-  {
-    label: 'Asia',
-    borderColor: 'red',
-  },
-  {
-    label: 'Europe',
-    borderColor: 'red',
-  },
+  datasets: [
+    {
+      label: 'Asia',
+    },
+    {
+      label: 'Europe',
+    },
   ]
 }
 
@@ -51,6 +44,9 @@ const config = {
   options: {
     indexAxis: 'y',
     plugins: {
+      legend: {
+        onClick: legendClickHandler
+      },
       datalabels: {
         align: 'end',
         anchor: 'end',
@@ -62,9 +58,6 @@ const config = {
           return formatNumber(value);
         }
       },
-      legend: {
-        display: true,
-      }
     },
     scales: {
       y: {
@@ -92,7 +85,6 @@ const config = {
 const nTop = 10
 const currentYear = ref(null)
 const totalPop = ref(null)
-const population = ref(null)
 const asiaPop = ref(null)
 const euPop = ref(null)
 const africaPop = ref(null)
@@ -126,7 +118,6 @@ onBeforeMount(async () => {
   if (cachedData) {
     console.log("Cache found, loading cached data")
     const cachedJSONObject = JSON.parse(cachedData);
-    population.value = cachedJSONObject.population
     asiaPop.value = cachedJSONObject.asiaPop;
     euPop.value = cachedJSONObject.euPop;
     africaPop.value = cachedJSONObject.africaPop;
@@ -136,7 +127,6 @@ onBeforeMount(async () => {
     years.value = cachedJSONObject.years;
   } else {
     console.log("Cache doesn't exist, initialize cache data")
-    const populationData = await axios.get('http://localhost:5000/population/asia');
     const asiaData = await axios.get('http://localhost:5000/population/asia');
     const euData = await axios.get('http://localhost:5000/population/europe');
     const africaData = await axios.get('http://localhost:5000/population/africa');
@@ -145,7 +135,6 @@ onBeforeMount(async () => {
     const saData = await axios.get('http://localhost:5000/population/sa');
     const yearsData = await axios.get('http://localhost:5000/population/years');
 
-    population.value = populationData.data;
     asiaPop.value = asiaData.data;
     euPop.value = euData.data;
     africaPop.value = africaData.data;
@@ -155,7 +144,6 @@ onBeforeMount(async () => {
     years.value = yearsData.data;
 
     sessionStorage.setItem('cachedData', JSON.stringify({
-      population: populationData.data,
       asiaPop: asiaData.data,
       euPop: euData.data,
       africaPop: africaData.data,
@@ -175,21 +163,10 @@ const togglePlay = async () => {
   }
 }
 
-function getRandomColor(text) {
-  let seed = 0;
-  for (let i = 0; i < text.length; i++) {
-    seed += text.charCodeAt(i);
-  }
-  const randomColor = '#' + Math.floor(Math.abs(Math.sin(seed) * 14777215) % 16777215).toString(16);
-  return randomColor;
-}
-
 const initializeData = async () => {
   const firstYear = years.value[0]
   currentYear.value = firstYear
-  totalPop.value = computeTotalPop(firstYear)
-  chartState.value = computeNTopPopCountry(firstYear, nTop).value
-  computeNewChart(chartState)
+  updatedChart(firstYear)
 }
 
 // bug that when user click reset button, its currentIndex get rewrite just after set to 0
@@ -208,9 +185,7 @@ async function displayPopulation(startIndex) {
     }
     const year = years.value[i];
     currentYear.value = year
-    totalPop.value = formatNumber(computeTotalPop(year))
-    chartState.value = computeNTopPopCountry(year, nTop).value
-    computeNewChart(chartState)
+    updatedChart(year)
     await delay(200);
   }
   if (currentIndex.value === years.value.length - 1) {
@@ -219,7 +194,9 @@ async function displayPopulation(startIndex) {
   }
 }
 
-function computeNewChart(chartState) {
+function updatedChart(year) {
+  totalPop.value = formatNumber(computeTotalPop(year))
+  chartState.value = computeNTopPopCountry(year, nTop).value
   const countryNames = chartState.value.map(item => item[0]);
   const countryPopulation = chartState.value.map(item => item[1]);
   changeChartData(countryNames, countryPopulation)
@@ -233,14 +210,6 @@ function changeChartData(label, newData) {
   myChart.value.value.update();
 }
 
-async function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-function formatNumber(number) {
-  return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
-
 function computeTotalPop(year) {
   const asiaTotalPop = toggleAsia.value ? asiaPop.value[year][0][1] : 0
   const euTotalPop = toggleEu.value ? euPop.value[year][0][1] : 0
@@ -251,7 +220,6 @@ function computeTotalPop(year) {
 
   return asiaTotalPop + euTotalPop + africaTotalPop + ocTotalPop + naTotalPop + saTotalPop
 }
-
 
 function computeNTopPopCountry(year, n) {
   const asiaList = toggleAsia.value ? asiaPop.value[year].slice(1, 11) : [];
@@ -283,6 +251,50 @@ function computeNTopPopCountry(year, n) {
   }
 
   return topNCountry
+}
+
+function legendClickHandler(e, legendItem, legend) {
+
+  legendItem.hidden = true
+
+  const name = legendItem.text;
+ 
+  // const label = legendItem.text;
+  //         if (label === 'Asia') {
+  //           toggleAsia.value = !toggleAsia.value;
+  //           if (!toggleAsia.value) {
+  //             myChart.value.value.boxes[0].legendItems[0].text = "Hi"
+  //             myChart.value.value.legend.legendItems[0].text = "Hi"
+  //             console.log()
+  //             myChart.value.value.update();
+  //           } else {
+  //             legendItem.strokeStyle = null; // Reset the color
+  //             legendItem.lineWidth = null; // Reset the line width
+  //           }
+  //           totalPop.value = formatNumber(computeTotalPop(currentYear.value))
+  //           chartState.value = computeNTopPopCountry(currentYear.value, nTop).value
+  //           computeNewChart(chartState)
+  //           myChart.value.value.update();
+
+  //         }
+}
+
+// ===================== HELPER ==============================
+function getRandomColor(text) {
+  let seed = 0;
+  for (let i = 0; i < text.length; i++) {
+    seed += text.charCodeAt(i);
+  }
+  const randomColor = '#' + Math.floor(Math.abs(Math.sin(seed) * 14777215) % 16777215).toString(16);
+  return randomColor;
+}
+
+async function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function formatNumber(number) {
+  return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
 </script>
