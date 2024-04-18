@@ -30,10 +30,26 @@ const chartData = {
   labels: labels.value,
   datasets: [
     {
+      label: 'All',
+      boxWidth: 0
+    },
+    {
       label: 'Asia',
     },
     {
       label: 'Europe',
+    },
+    {
+      label: 'Africa',
+    },
+    {
+      label: 'North America',
+    },
+    {
+      label: 'South America',
+    },
+    {
+      label: 'Oceania',
     },
   ]
 }
@@ -45,7 +61,7 @@ const config = {
     indexAxis: 'y',
     plugins: {
       legend: {
-        onClick: legendClickHandler
+        onClick: legendClickHandler,
       },
       datalabels: {
         align: 'end',
@@ -76,6 +92,10 @@ const config = {
             size: 12
           }
         }
+      }
+    },
+    datasets: {
+      bar: {
       }
     }
   },
@@ -116,7 +136,6 @@ onBeforeMount(async () => {
 
   const cachedData = await sessionStorage.getItem('cachedData');
   if (cachedData) {
-    console.log("Cache found, loading cached data")
     const cachedJSONObject = JSON.parse(cachedData);
     asiaPop.value = cachedJSONObject.asiaPop;
     euPop.value = cachedJSONObject.euPop;
@@ -126,7 +145,6 @@ onBeforeMount(async () => {
     saPop.value = cachedJSONObject.saPop;
     years.value = cachedJSONObject.years;
   } else {
-    console.log("Cache doesn't exist, initialize cache data")
     const asiaData = await axios.get('http://localhost:5000/population/asia');
     const euData = await axios.get('http://localhost:5000/population/europe');
     const africaData = await axios.get('http://localhost:5000/population/africa');
@@ -173,7 +191,6 @@ const initializeData = async () => {
 const resetButton = async () => {
   isPlaying.value = false;
   currentIndex.value = 0;
-  console.log("resetButton : " + currentIndex.value)
   initializeData();
 }
 
@@ -199,14 +216,14 @@ function updatedChart(year) {
   chartState.value = computeNTopPopCountry(year, nTop).value
   const countryNames = chartState.value.map(item => item[0]);
   const countryPopulation = chartState.value.map(item => item[1]);
-  changeChartData(countryNames, countryPopulation)
+  const barColor = chartState.value.map(item => item[2])
+  changeChartData(countryNames, countryPopulation, barColor)
 }
 
-function changeChartData(label, newData) {
+function changeChartData(label, newData, barColor) {
   myChart.value.value.data.labels = label
   myChart.value.value.data.datasets[0].data = newData
-  const newBackgroundColors = myChart.value.value.data.labels.map(label => getRandomColor(label));
-  myChart.value.value.data.datasets[0].backgroundColor = newBackgroundColors;
+  myChart.value.value.data.datasets[0].backgroundColor = barColor;
   myChart.value.value.update();
 }
 
@@ -221,17 +238,18 @@ function computeTotalPop(year) {
   return asiaTotalPop + euTotalPop + africaTotalPop + ocTotalPop + naTotalPop + saTotalPop
 }
 
+
 function computeNTopPopCountry(year, n) {
   const asiaList = toggleAsia.value ? asiaPop.value[year].slice(1, 11) : [];
   const euList = toggleEu.value ? euPop.value[year].slice(1, 11) : [];
   const africaList = toggleAfrica.value ? africaPop.value[year].slice(1, 11) : [];
-  const ocList = toggleOc.value ? ocPop.value[year].slice(1, 11) : [];
   const naList = toggleNa.value ? naPop.value[year].slice(1, 11) : [];
   const saList = toggleSa.value ? saPop.value[year].slice(1, 11) : [];
+  const ocList = toggleOc.value ? ocPop.value[year].slice(1, 11) : [];
 
   const topNCountry = ref([]);
 
-  const lists = [asiaList, euList, africaList, ocList, naList, saList];
+  const lists = [asiaList, euList, africaList, naList, saList, ocList];
 
   for (let i = 0; i < n; i++) {
     let maxPopulation = -Infinity;
@@ -244,50 +262,68 @@ function computeNTopPopCountry(year, n) {
         maxIndex = j;
       }
     }
-
+    // asia 'rgba(255, 99, 132, 0.5)'
+    // eu 'rgba(255, 159, 64, 0.5)'
+    // afr 'rgba(255, 205, 86, 0.5)'
+    // na 'rgba(75, 192, 192, 0.5)'
+    // sa 'rgba(153, 102, 255, 0.5)'
+    // oc 'rgba(201, 203, 207, 0.5)'
     if (maxIndex !== -1) {
-      topNCountry.value.push(lists[maxIndex].shift());
+      const country = lists[maxIndex].shift()
+      switch (maxIndex) {
+        case 0:
+          country.push('rgba(255, 99, 132, 0.5)')
+          break;
+        case 1:
+          country.push('rgba(255, 159, 64, 0.5)')
+          break;
+        case 2:
+          country.push('rgba(255, 205, 86, 0.5)')
+          break;
+        case 3:
+          country.push('rgba(75, 192, 192, 0.5)')
+          break;
+        case 4:
+          country.push('rgba(153, 102, 255, 0.5)')
+          break;
+        case 5:
+          country.push('rgba(201, 203, 207, 0.5)')
+          break;
+      }
+      topNCountry.value.push(country);
     }
   }
 
   return topNCountry
 }
 
-function legendClickHandler(e, legendItem, legend) {
+function legendClickHandler(e, legendItem) {
+  const index = legendItem.datasetIndex
+  const ci = myChart.value.value
+  const meta = ci.getDatasetMeta(index)
 
-  legendItem.hidden = true
+  meta.hidden = meta.hidden === null ? !ci.data.datasets[index].hidden : null;
+
 
   const name = legendItem.text;
- 
-  // const label = legendItem.text;
-  //         if (label === 'Asia') {
-  //           toggleAsia.value = !toggleAsia.value;
-  //           if (!toggleAsia.value) {
-  //             myChart.value.value.boxes[0].legendItems[0].text = "Hi"
-  //             myChart.value.value.legend.legendItems[0].text = "Hi"
-  //             console.log()
-  //             myChart.value.value.update();
-  //           } else {
-  //             legendItem.strokeStyle = null; // Reset the color
-  //             legendItem.lineWidth = null; // Reset the line width
-  //           }
-  //           totalPop.value = formatNumber(computeTotalPop(currentYear.value))
-  //           chartState.value = computeNTopPopCountry(currentYear.value, nTop).value
-  //           computeNewChart(chartState)
-  //           myChart.value.value.update();
+  if (name === 'Asia') {
+    toggleAsia.value = !toggleAsia.value
+  } else if (name === 'Europe') {
+    toggleEu.value = !toggleEu.value
+  } else if (name === 'Africa') {
+    toggleAfrica.value = !toggleAfrica.value
+  } else if (name === 'North America') {
+    toggleNa.value = !toggleNa.value
+  } else if (name === 'South America') {
+    toggleSa.value = !toggleSa.value
+  } else if (name === 'Oceania') {
+    toggleOc.value = !toggleOc.value
+  }
 
-  //         }
+  updatedChart(currentYear.value)
 }
 
 // ===================== HELPER ==============================
-function getRandomColor(text) {
-  let seed = 0;
-  for (let i = 0; i < text.length; i++) {
-    seed += text.charCodeAt(i);
-  }
-  const randomColor = '#' + Math.floor(Math.abs(Math.sin(seed) * 14777215) % 16777215).toString(16);
-  return randomColor;
-}
 
 async function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
