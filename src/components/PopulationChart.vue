@@ -95,7 +95,7 @@ const config = {
     },
     datasets: {
       bar: {
-        barPercentage: 40,
+        barPercentage: 20,
         categoryPercentage: 0.1
       }
     }
