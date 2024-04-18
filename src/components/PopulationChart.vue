@@ -31,7 +31,6 @@ const chartData = {
   datasets: [
     {
       label: 'All',
-      boxWidth: 0
     },
     {
       label: 'Asia',
@@ -96,6 +95,8 @@ const config = {
     },
     datasets: {
       bar: {
+        barPercentage: 40,
+        categoryPercentage: 0.1
       }
     }
   },
