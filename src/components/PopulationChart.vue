@@ -188,10 +188,10 @@ const initializeData = async () => {
   updatedChart(firstYear)
 }
 
-// bug that when user click reset button, its currentIndex get rewrite just after set to 0
+const reset = ref(false)
 const resetButton = async () => {
+  reset.value = true
   isPlaying.value = false;
-  currentIndex.value = 0;
   initializeData();
 }
 
@@ -199,6 +199,10 @@ async function displayPopulation(startIndex) {
   for (let i = startIndex; i < years.value.length; i++) {
     currentIndex.value = i;
     if (!isPlaying.value) {
+      if (reset.value === true) {
+        currentIndex.value = 0;
+        reset.value = false
+      }
       break;
     }
     const year = years.value[i];
