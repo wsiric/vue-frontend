@@ -146,13 +146,14 @@ onBeforeMount(async () => {
     saPop.value = cachedJSONObject.saPop;
     years.value = cachedJSONObject.years;
   } else {
-    const asiaData = await axios.get('http://localhost:5000/population/asia');
-    const euData = await axios.get('http://localhost:5000/population/europe');
-    const africaData = await axios.get('http://localhost:5000/population/africa');
-    const ocData = await axios.get('http://localhost:5000/population/oceania');
-    const naData = await axios.get('http://localhost:5000/population/na');
-    const saData = await axios.get('http://localhost:5000/population/sa');
-    const yearsData = await axios.get('http://localhost:5000/population/years');
+    const url = "https://sgn-service-5voezw3rqq-as.a.run.app/"
+    const asiaData = await axios.get(`${url}/population/asia`);
+    const euData = await axios.get(`${url}/population/europe`);
+    const africaData = await axios.get(`${url}/population/africa`);
+    const ocData = await axios.get(`${url}/population/oceania`);
+    const naData = await axios.get(`${url}/population/na`);
+    const saData = await axios.get(`${url}/population/sa`);
+    const yearsData = await axios.get(`${url}/population/years`);
 
     asiaPop.value = asiaData.data;
     euPop.value = euData.data;
