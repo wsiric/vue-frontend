@@ -2,7 +2,7 @@
   <h1 class="title">Population growth per country, 1950 to 2021</h1>
   <v-container style="position: relative;">
     <div class="chart-container">
-      <canvas id="myChart"></canvas>
+      <canvas id="myChart" style="width: 100%; height: 70vh;"></canvas>
       <div class="relative-year">{{ currentYear }}</div>
       <div class="relative-world-pop">Total: {{ totalPop }}</div>
     </div>
@@ -57,6 +57,7 @@ const config = {
   type: 'bar',
   data: chartData,
   options: {
+    responsive: false,
     indexAxis: 'y',
     plugins: {
       legend: {
@@ -349,18 +350,18 @@ function formatNumber(number) {
 .relative-year {
   position: absolute;
   color: #87857e;
-  top: 66%;
-  left: 81%;
-  font-size: 64px;
+  top: 74%;
+  left: 80%;
+  font-size: 2.5vw;
   font-weight: bold;
 }
 
 .relative-world-pop {
   position: absolute;
   color: #87857e;
-  top: 80%;
-  left: 65%;
-  font-size: 38px;
+  top: 83%;
+  left: 75%;
+  font-size: 1.5vw;
 }
 
 .title {
